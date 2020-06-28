@@ -12,7 +12,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Service;
+import org.springframework.util.MimeTypeUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.wnameless.json.flattener.JsonFlattener;
@@ -46,7 +50,19 @@ public class AppointmentService {
   //insert the appointment
 	public Appointment saveAppointment(Appointment appointment)
   	{
-  		System.out.println(serviceUrl+appointment.getCustomerId());
+  		//Insertion into kafka 
+  		MessageChannel messageChannel = appointmentStreams.outboundAppointment();
+		 message_flg =  messageChannel.send(MessageBuilder
+	                .withPayload(appointment)
+	                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+	                .build());
+		
+
+			if(message_flg){
+			System.out.println("Message insertion in MQ successful");
+			}		
+		
+		System.out.println(serviceUrl+appointment.getCustomerId());
   		
   		Appointment responseAppointment=null;  		
   		ResponseEntity<String> response =restTemplate.exchange(serviceUrl+appointment.getCustomerId(),HttpMethod.GET,null,String.class);
